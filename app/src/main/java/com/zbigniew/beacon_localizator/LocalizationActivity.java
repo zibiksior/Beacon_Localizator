@@ -40,16 +40,18 @@ import static java.lang.Math.*;
 
 public class LocalizationActivity extends AppCompatActivity implements BeaconConsumer, RangeNotifier {
 
-    private static final double EPSILON = 0.000001;
+    private static final double EPSILON = 0.2;
     private static final int READ_SDCARD_REQUEST = 123;
     private static final int FINE_LOCATION_REQUEST = 123;
     private final BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
     private BeaconManager mBeaconManager;
 
-    private int tab[][] = new int[3][10];
+    private int tab[][] = new int[6][10];
     private double model[]=new double[50];
-    private double avgRssi[]=new double[3], avgDistance[] = new double[3];
+    private double avgRssi[]=new double[6], avgDistance[] = new double[6];
+
+    private double intersectionPoint1_x, intersectionPoint2_x, intersectionPoint1_y, intersectionPoint2_y;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -218,9 +220,8 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
         mBeaconManager.unbind(this);
     }
 
-    private boolean calculateThreeCircleIntersection(double x0, double y0, double r0,
-                                                     double x1, double y1, double r1,
-                                                     double x2, double y2, double r2) {
+    private boolean calculateTwoCirclesIntersectionPoints(double x0, double y0, final double r0,
+                                                       double x1, double y1, final double r1){
         double a, dx, dy, d, h, rx, ry;
         double point2_x, point2_y;
 
@@ -236,7 +237,10 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
     /* Check for solvability. */
         if (d > (r0 + r1)) {
         /* no solution. circles do not intersect. */
-            return false;
+            if(calculateTwoCirclesIntersectionPoints(x0, y0, (r0+0.1),x1,y1,(r1+0.1))){
+                calculateThreeCircleIntersection(0,5,avgDistance[1]);
+            }
+            return  false;
         }
         if (d < abs(r0 - r1)) {
         /* no solution. one circle is contained in the other */
@@ -267,28 +271,50 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
         ry = dx * (h / d);
 
     /* Determine the absolute intersection points. */
-        double intersectionPoint1_x = point2_x + rx;
-        double intersectionPoint2_x = point2_x - rx;
-        double intersectionPoint1_y = point2_y + ry;
-        double intersectionPoint2_y = point2_y - ry;
+        intersectionPoint1_x = point2_x + rx;
+        intersectionPoint2_x = point2_x - rx;
+        intersectionPoint1_y = point2_y + ry;
+        intersectionPoint2_y = point2_y - ry;
 
         Log.d("TAG", "INTERSECTION Circle1 AND Circle2: (" + intersectionPoint1_x + "," + intersectionPoint1_y + ")" + " AND (" + intersectionPoint2_x + "," + intersectionPoint2_y + ")");
+        /*runOnUiThread(new Runnable() {
+            public void run() {
+                ((TextView) LocalizationActivity.this.findViewById(R.id.message)).setText("r0= "+r0+"\n r1= "+r1);
+            }
+        });*/
+        return true;
+    }
+
+    private boolean calculateThreeCircleIntersection(double x, double y, double r) {
+        double dx, dy;
 
     /* Lets determine if circle 3 intersects at either of the above intersection points. */
-        dx = intersectionPoint1_x - x2;
-        dy = intersectionPoint1_y - y2;
+        dx = intersectionPoint1_x - x;
+        dy = intersectionPoint1_y - y;
         double d1 = sqrt((dy * dy) + (dx * dx));
 
-        dx = intersectionPoint2_x - x2;
-        dy = intersectionPoint2_y - y2;
+        dx = intersectionPoint2_x - x;
+        dy = intersectionPoint2_y - y;
         double d2 = sqrt((dy * dy) + (dx * dx));
 
-        if (abs(d1 - r2) < EPSILON) {
+        if (abs(d1 - r) < EPSILON) {
             Log.d("TAG", "INTERSECTION Circle1 AND Circle2 AND Circle3: " + "(" + intersectionPoint1_x + "," + intersectionPoint1_y + ")");
-        } else if (abs(d2 - r2) < EPSILON) {
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    ((TextView) LocalizationActivity.this.findViewById(R.id.message)).setText("INTERSECTION Circle1 AND Circle2 AND Circle3: " + "(" + intersectionPoint1_x + "," + intersectionPoint1_y + ")");
+                }
+            });
+        } else if (abs(d2 - r) < EPSILON) {
             Log.d("TAG", "INTERSECTION Circle1 AND Circle2 AND Circle3: (" + intersectionPoint2_x + "," + intersectionPoint2_y + ")"); //here was an error
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    ((TextView) LocalizationActivity.this.findViewById(R.id.message)).setText("INTERSECTION Circle1 AND Circle2 AND Circle3: (" + intersectionPoint2_x + "," + intersectionPoint2_y + ")");
+                }
+            });
         } else {
             Log.d("TAG", "INTERSECTION Circle1 AND Circle2 AND Circle3: NONE");
+            calculateThreeCircleIntersection(x, y, (r+0.1));
+            return false;
         }
         return true;
     }
@@ -348,6 +374,40 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
                         }
                         avgRssi[2]=sum/10;
                         break;
+                    case "0x72796a446a62":
+                        for (int i = 1; i < 10; i++) {
+                            tab[3][i - 1] = tab[3][i];
+                        }
+                        tab[3][9] = beacon.getRssi();
+                        sum=0;
+                        for (int i = 0; i < 10; i++) {
+                            sum+=tab[3][i];
+                        }
+                        avgRssi[3]=sum/10;
+                        break;
+                    case "0x724335666650":
+                        for (int i = 1; i < 10; i++) {
+                            tab[4][i - 1] = tab[4][i];
+                        }
+                        tab[4][9] = beacon.getRssi();
+                        sum=0;
+                        for (int i = 0; i < 10; i++) {
+                            sum+=tab[4][i];
+                        }
+                        avgRssi[4]=sum/10;
+                        break;
+                    case "0x6f4334313146":
+                        for (int i = 1; i < 10; i++) {
+                            tab[5][i - 1] = tab[5][i];
+                        }
+                        tab[5][9] = beacon.getRssi();
+                        sum=0;
+                        for (int i = 0; i < 10; i++) {
+                            sum+=tab[5][i];
+                        }
+                        avgRssi[5]=sum/10;
+                        break;
+
                 }
                 Log.d("RangingActivity", "I see a beacon transmitting namespace id: " + namespaceId +
                         " and instance id: " + instanceId +
@@ -360,10 +420,10 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
             }
         }
 
-        for(int j=0;j<3;j++){
+        for(int j=0;j<6;j++){
             double myNumber = avgRssi[j];
             double distance = Math.abs(model[0] - myNumber);
-            int idx = 0;
+            double idx = 0;
             for(int c = 1; c < model.length; c++){
                 double cdistance = Math.abs(model[c] - myNumber);
                 if(cdistance < distance){
@@ -371,17 +431,21 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
                     distance = cdistance;
                 }
             }
-            avgDistance[j] = idx;
+            avgDistance[j] = (idx+1)/10;
         }
 
-        runOnUiThread(new Runnable() {
+        /*runOnUiThread(new Runnable() {
             public void run() {
-                ((TextView) LocalizationActivity.this.findViewById(R.id.message)).setText("avgDistance 0:"+avgDistance[0]+
-                        "\nAvg Distance 1: "+avgDistance[1]+
-                        "\nAvg Distance 2: "+avgDistance[2]);
+                ((TextView) LocalizationActivity.this.findViewById(R.id.message)).setText("avgDistance 1 (Hf6n): " + avgDistance[0] +
+                        "\nAvg Distance 2 (aYJn): " + avgDistance[1] +
+                        "\nAvg Distance 3 (zUUe): " + avgDistance[2] +
+                        "\nAvg Distance 4 (luH8): " + avgDistance[3] +
+                        "\nAvg Distance 5 (wxSM): " + avgDistance[4] +
+                        "\nAvg Distance 5 (f5P9): " + avgDistance[5]);
             }
-        });
-        calculateThreeCircleIntersection(0,0,avgDistance[0],3,0,avgDistance[1],0,3,avgDistance[2]);
+        });*/
+        calculateTwoCirclesIntersectionPoints(0,0,avgDistance[2],3.5,5, avgDistance[4]);
+
     }
 
     private void initializeBeaconManager() {
