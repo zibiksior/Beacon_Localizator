@@ -505,7 +505,6 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
                 calculateThreeCircleIntersection(punktyBeaconow[result[i][2]], avgDistance[result[i][2]],i);
             }
         }
-
         runOnUiThread(new Runnable() {
             public void run() {
                 message.setText("");
