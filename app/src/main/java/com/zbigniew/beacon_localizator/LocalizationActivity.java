@@ -388,6 +388,7 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
         }
     }
 
+
     @Override
     public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
         for (Beacon beacon : beacons) {
