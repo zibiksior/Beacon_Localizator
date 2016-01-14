@@ -11,7 +11,7 @@ import org.altbeacon.beacon.Beacon;
 public class MyBeacon extends Beacon{
     static Parcelable.Creator CREATOR;
 
-    private Point punktBeacona;
+    private Punkt punktBeacona;
     private int lastTenRSSi[] = new int[10];
     private double avgRssi;
     private double avgDistance;
@@ -28,16 +28,20 @@ public class MyBeacon extends Beacon{
         this.avgDistance += value;
     }
 
+    public void minusToAvgDistance(double value) {
+        this.avgDistance -= value;
+    }
+
     public double getAvgDistance() {
         return avgDistance;
     }
 
 
-    public void setPunktBeacona(Point punktBeacona) {
+    public void setPunktBeacona(Punkt punktBeacona) {
         this.punktBeacona = punktBeacona;
     }
 
-    public Point getPunktBeacona() {
+    public Punkt getPunktBeacona() {
         return punktBeacona;
     }
 

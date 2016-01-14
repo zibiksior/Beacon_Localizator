@@ -48,7 +48,7 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
 
     private BeaconManager mBeaconManager;
 
-    private Map<String,Point> punktyBeaconow;
+    private Map<String,Punkt> punktyBeaconow;
     private double model[]=new double[50];
 
     private ArrayList<MyBeacon> beacony = new ArrayList<>();
@@ -88,10 +88,10 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
         }
 
         punktyBeaconow = new HashMap<>();
-        punktyBeaconow.put("0x6d767674636e", new Point(0,0));
-        punktyBeaconow.put("0x6f4334313146", new Point(4,0));
-        punktyBeaconow.put("0x724335666650", new Point(4,4));
-        punktyBeaconow.put("0x506b444b4c48", new Point(0,4));
+        punktyBeaconow.put("0x6d767674636e", new Punkt(4,0));
+        punktyBeaconow.put("0x6f4334313146", new Punkt(0,0));
+        punktyBeaconow.put("0x724335666650", new Punkt(0,4));
+        punktyBeaconow.put("0x30636169506c", new Punkt(3,3));
 
 
 
@@ -354,8 +354,27 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
                 }
             });*/
 
-            beacon.addToAvgDistance(0.1);
-            calculateThreeCircleIntersection(beacon, iter);
+            if(abs(d1 - beacon.getAvgDistance())<abs(d2 - beacon.getAvgDistance())){
+                if(d1<beacon.getAvgDistance()){
+                    beacon.addToAvgDistance(0.1);
+
+                }
+                else{
+                    beacon.minusToAvgDistance(0.1);
+                }
+                calculateThreeCircleIntersection(beacon, iter);
+            }
+            else{
+                if(d2<beacon.getAvgDistance()){
+                    beacon.addToAvgDistance(0.1);
+
+                }
+                else{
+                    beacon.minusToAvgDistance(0.1);
+                }
+                calculateThreeCircleIntersection(beacon, iter);
+            }
+
             return false;
         }
         return true;
