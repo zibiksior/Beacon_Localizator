@@ -64,8 +64,7 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
     private double model[]=new double[50];
 
     private ArrayList<MyBeacon> beacony = new ArrayList<>();
-
-    private double intersectionPoint1_x, intersectionPoint2_x, intersectionPoint1_y, intersectionPoint2_y;
+    private ArrayList<Kalman> kalmanFilters = new ArrayList<Kalman>();//(0.01,0.5, 50, 1);
 
     private TextView message;
     private static final int liczbaKombinacji = silnia(4)/(silnia(3) * silnia(4 - 3));;
@@ -274,134 +273,6 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
         mBeaconManager.unbind(this);
     }
 
-    private boolean calculateTwoCirclesIntersectionPoints(MyBeacon b0, MyBeacon b1, MyBeacon b2, int iter){
-        double a, dx, dy, d, h, rx, ry;
-        double point2_x, point2_y;
-
-    /* dx and dy are the vertical and horizontal distances between
-    * the circle centers.
-    */
-        dx = b1.getPunktBeacona().x - b0.getPunktBeacona().x;
-        dy = b1.getPunktBeacona().y - b0.getPunktBeacona().y;
-
-    /* Determine the straight-line distance between the centers. */
-        d = sqrt((dy * dy) + (dx * dx));
-
-    /* Check for solvability. */
-        if (d > (b0.getAvgDistance() + b1.getAvgDistance())) {
-        /* no solution. circles do not intersect. */
-            b0.addToAvgDistance(0.2);
-            b1.addToAvgDistance(0.2);
-            if(calculateTwoCirclesIntersectionPoints(b0,b1,b2, iter)){
-                calculateThreeCircleIntersection(b2, iter);
-            }
-            return  false;
-        }
-        if (d < abs(b0.getAvgDistance() - b1.getAvgDistance())) {
-        /* no solution. one circle is contained in the other */
-            return false;
-        }
-
-    /* 'point 2' is the point where the line through the circle
-    * intersection points crosses the line between the circle
-    * centers.
-    */
-
-    /* Determine the distance from point 0 to point 2. */
-        a = ((b0.getAvgDistance() * b0.getAvgDistance()) - (b1.getAvgDistance() * b1.getAvgDistance()) + (d * d)) / (2.0 * d);
-
-    /* Determine the coordinates of point 2. */
-        point2_x = b0.getPunktBeacona().x + (dx * a / d);
-        point2_y = b0.getPunktBeacona().y + (dy * a / d);
-
-    /* Determine the distance from point 2 to either of the
-    * intersection points.
-    */
-        h = sqrt((b0.getAvgDistance() * b0.getAvgDistance()) - (a * a));
-
-    /* Now determine the offsets of the intersection points from
-    * point 2.
-    */
-        rx = -dy * (h / d);
-        ry = dx * (h / d);
-
-    /* Determine the absolute intersection points. */
-        intersectionPoint1_x = point2_x + rx;
-        intersectionPoint2_x = point2_x - rx;
-        intersectionPoint1_y = point2_y + ry;
-        intersectionPoint2_y = point2_y - ry;
-
-        //Log.d("TAG", "INTERSECTION Circle1 AND Circle2: (" + intersectionPoint1_x + "," + intersectionPoint1_y + ")" + " AND (" + intersectionPoint2_x + "," + intersectionPoint2_y + ")");
-        /*runOnUiThread(new Runnable() {
-            public void run() {
-                ((TextView) LocalizationActivity.this.findViewById(R.id.message)).setText("r0= "+r0+"\n r1= "+r1);
-            }
-        });*/
-        return true;
-    }
-
-
-    private boolean calculateThreeCircleIntersection(MyBeacon beacon, int iter) {
-        double dx, dy;
-
-    /* Lets determine if circle 3 intersects at either of the above intersection points. */
-        dx = intersectionPoint1_x - beacon.getPunktBeacona().x;
-        dy = intersectionPoint1_y - beacon.getPunktBeacona().y;
-        double d1 = sqrt((dy * dy) + (dx * dx));
-
-        dx = intersectionPoint2_x - beacon.getPunktBeacona().x;
-        dy = intersectionPoint2_y - beacon.getPunktBeacona().y;
-        double d2 = sqrt((dy * dy) + (dx * dx));
-
-        if (abs(d1 - beacon.getAvgDistance()) < EPSILON) {
-            punkty[iter][0]=intersectionPoint1_x;
-            punkty[iter][1]=intersectionPoint1_y;
-            /*Log.d("TAG", "INTERSECTION Circle1 AND Circle2 AND Circle3: " + "(" + intersectionPoint1_x + "," + intersectionPoint1_y + ")");
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    message.setText("INTERSECTION Circle1 AND Circle2 AND Circle3: " + "(\n" + intersectionPoint1_x + ",\n" + intersectionPoint1_y + ")");
-                }
-            });*/
-        } else if (abs(d2 - beacon.getAvgDistance()) < EPSILON) {
-            punkty[iter][0]=intersectionPoint2_x;
-            punkty[iter][1]=intersectionPoint2_y;
-            //Log.d("TAG", "INTERSECTION Circle1 AND Circle2 AND Circle3: (" + intersectionPoint2_x + "," + intersectionPoint2_y + ")");
-            /*runOnUiThread(new Runnable() {
-                public void run() {
-                    message.setText("INTERSECTION Circle1 AND Circle2 AND Circle3: (\n" + intersectionPoint2_x + ",\n" + intersectionPoint2_y + ")");
-                }
-            });*/
-        } else {
-            /*Log.d("TAG", "INTERSECTION Circle1 AND Circle2 AND Circle3: NONE");
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    message.setText("INTERSECTION Circle1 AND Circle2 AND Circle3: NONE");
-                }
-            });*/
-
-            if(abs(d1 - beacon.getAvgDistance())<abs(d2 - beacon.getAvgDistance())){
-                if(d1<beacon.getAvgDistance()){
-                    beacon.addToAvgDistance(0.1);
-                }
-                else{
-                    beacon.minusToAvgDistance(0.1);
-                }
-                calculateThreeCircleIntersection(beacon, iter);
-            }
-            else{
-                if(d2<beacon.getAvgDistance()){
-                    beacon.addToAvgDistance(0.1);
-                }
-                else{
-                    beacon.minusToAvgDistance(0.1);
-                }
-                calculateThreeCircleIntersection(beacon, iter);
-            }
-            return false;
-        }
-        return true;
-    }
-
     @Override
     public void onBeaconServiceConnect() {
 
@@ -429,6 +300,12 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
         }
     }
 
+    public void kalmanUpdate(int index, MyBeacon myBeacon){
+        Kalman kalman = kalmanFilters.get(index);
+        kalman.update(myBeacon.getRssi());
+        myBeacon.setAvgRssi(kalman.getValue());
+    }
+
 
     @Override
     public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
@@ -440,17 +317,27 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
                 MyBeacon myBeacon;
                 myBeacon = new MyBeacon(beacon);
 
+                int index;
+
+
+
                 if(!beacony.contains(myBeacon)){
-                    myBeacon.addToLastTenRSSi(beacon.getRssi());
+                    //myBeacon.addToLastTenRSSi(beacon.getRssi());
                     myBeacon.setPunktBeacona(punktyBeaconow.get(instanceId.toString()));
                     beacony.add(myBeacon);
+                    kalmanFilters.add(new Kalman(0.01,0.5, 50, 1));
+                    index = beacony.indexOf(myBeacon);
+                    kalmanUpdate(index, myBeacon);
                 }
                 else{
-                    myBeacon = beacony.get(beacony.indexOf(myBeacon));
-                    myBeacon.addToLastTenRSSi(beacon.getRssi());
+                    index = beacony.indexOf(myBeacon);
+                    myBeacon = beacony.get(index);
+                    kalmanUpdate(index, myBeacon);
+                    //myBeacon.addToLastTenRSSi(beacon.getRssi());
 
                     myBeacon.setAvgDistance(beaconDistanceFromModel(myBeacon));
                 }
+
             }
         }
 

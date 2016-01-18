@@ -53,6 +53,10 @@ public class MyBeacon extends Beacon{
         return avgRssi/10;
     }
 
+    public void setAvgRssi(double rssi){
+        avgRssi = rssi;
+    }
+
     public void addToLastTenRSSi(int value) {
         for (int i = 1; i < 10; i++) {
             lastTenRSSi[i - 1] = lastTenRSSi[i];
