@@ -46,11 +46,7 @@ public class MyBeacon extends Beacon{
     }
 
     public double getAvgRssi() {
-        avgRssi=0;
-        for (int i = 0; i < 10; i++) {
-            avgRssi+=lastTenRSSi[i];
-        }
-        return avgRssi/10;
+        return avgRssi;
     }
 
     public void setAvgRssi(double rssi){

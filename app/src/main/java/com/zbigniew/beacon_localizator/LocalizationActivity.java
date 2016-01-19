@@ -64,7 +64,7 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
     private double model[]=new double[50];
 
     private ArrayList<MyBeacon> beacony = new ArrayList<>();
-    private ArrayList<Kalman> kalmanFilters = new ArrayList<Kalman>();//(0.01,0.5, 50, 1);
+    private ArrayList<Kalman2> kalmanFilters = new ArrayList<Kalman2>();//(0.01,0.5, 50, 1);
 
     private TextView message;
     private static final int liczbaKombinacji = silnia(4)/(silnia(3) * silnia(4 - 3));;
@@ -76,6 +76,10 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
 
     RelativeLayout layout;
     DrawingView dv;
+
+    private double[][] positions;
+    private double[] distances;
+    private double[] centroid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,14 +95,6 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
         //dv.setBackgroundColor(Color.WHITE);
         layout.addView(dv);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
         try {
             FileInputStream fis = new FileInputStream("/sdcard/Beacon_Kalibracja_smooth.dat");
             ObjectInputStream iis = new ObjectInputStream(fis);
@@ -109,11 +105,11 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
 
         punktyBeaconow = new HashMap<>();
         punktyBeaconow.put("0x6d767674636e", new Punkt(0, 0));//zUUe
-        punktyBeaconow.put("0x6f4334313146", new Punkt(0,3.5));//f5p9
-        punktyBeaconow.put("0x506b444b4c48", new Punkt(0,7));//Hf6n
-        punktyBeaconow.put("0x72796a446a62", new Punkt(7,5));//luH8
-        punktyBeaconow.put("0x30636169506c", new Punkt(3.5,5));//aYjn
-        punktyBeaconow.put("0x724335666650", new Punkt(0,5));//WxSM
+        punktyBeaconow.put("0x6f4334313146", new Punkt(2.75,0));//f5p9
+        punktyBeaconow.put("0x506b444b4c48", new Punkt(5.20,0.40));//Hf6n
+        punktyBeaconow.put("0x72796a446a62", new Punkt(5.5,4.3));//luH8
+        punktyBeaconow.put("0x30636169506c", new Punkt(2.75,4.75));//aYjn
+        punktyBeaconow.put("0x724335666650", new Punkt(0,4.75));//WxSM
 
 
 
@@ -301,9 +297,8 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
     }
 
     public void kalmanUpdate(int index, MyBeacon myBeacon){
-        Kalman kalman = kalmanFilters.get(index);
-        kalman.update(myBeacon.getRssi());
-        myBeacon.setAvgRssi(kalman.getValue());
+        Kalman2 kalman = kalmanFilters.get(index);
+        myBeacon.setAvgRssi(kalman.update(myBeacon.getRssi()));
     }
 
 
@@ -319,15 +314,15 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
 
                 int index;
 
-
-
                 if(!beacony.contains(myBeacon)){
                     //myBeacon.addToLastTenRSSi(beacon.getRssi());
                     myBeacon.setPunktBeacona(punktyBeaconow.get(instanceId.toString()));
                     beacony.add(myBeacon);
-                    kalmanFilters.add(new Kalman(0.01,0.5, 50, 1));
+                    //kalmanFilters.add(new Kalman(0.01, 0.5, 5, 1));
+                    kalmanFilters.add(new Kalman2());
                     index = beacony.indexOf(myBeacon);
                     kalmanUpdate(index, myBeacon);
+                    myBeacon.setAvgDistance(beaconDistanceFromModel(myBeacon));
                 }
                 else{
                     index = beacony.indexOf(myBeacon);
@@ -341,9 +336,7 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
             }
         }
 
-        double[][] positions;
-        double[] distances;
-        final double[] centroid;
+
 
         if(beacony.size()>0){
             positions = new double[beacony.size()][2];
@@ -396,6 +389,7 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
                     distance = cdistance;
                 }
             }
+
         double avgDistance = (idx+1)/10;
         return avgDistance;
     }
@@ -437,49 +431,47 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
 
         @Override
         protected void onDraw(Canvas canvas) {
-            float ratioX = canvas.getWidth()/5, ratioY = canvas.getHeight()/7;
+            //float ratioX = canvas.getWidth()/5, ratioY = canvas.getHeight()/7;
             if(beacony.size()>0){
                 for(MyBeacon mb : beacony){
                     switch (mb.getId2().toString()){
                         case "0x6d767674636e":
 
-                            float r = (float)mb.getAvgDistance()*100;
-                            canvas.drawCircle(0, 0, r, drawPaint);
+                            float r = (float)mb.getAvgDistance()*200;
+                            canvas.drawCircle(30, 150, r, drawPaint);
                             break;
                         case "0x6f4334313146":
                             drawPaint.setColor(Color.GREEN);
-                            r = (float)mb.getAvgDistance()*100;
-                            canvas.drawCircle(0, 350, r, drawPaint);
+                            r = (float)mb.getAvgDistance()*200;
+                            canvas.drawCircle(30, 700, r, drawPaint);
                             break;
                         case "0x506b444b4c48":
                             drawPaint.setColor(Color.BLUE);
-                            r = (float)mb.getAvgDistance()*100;
-                            canvas.drawCircle(0, 700, r, drawPaint);
+                            r = (float)mb.getAvgDistance()*200;
+                            canvas.drawCircle(30, 1250, r, drawPaint);
                             break;
                         case "0x72796a446a62":
                             drawPaint.setColor(Color.CYAN);
-                            r = (float)mb.getAvgDistance()*100;
-                            canvas.drawCircle(500, 700, r, drawPaint);
+                            r = (float)mb.getAvgDistance()*200;
+                            canvas.drawCircle(980, 1250, r, drawPaint);
                             break;
                         case "0x30636169506c":
                             drawPaint.setColor(Color.MAGENTA);
-                            r = (float)mb.getAvgDistance()*100;
-                            canvas.drawCircle(500, 350, r, drawPaint);
+                            r = (float)mb.getAvgDistance()*200;
+                            canvas.drawCircle(980, 700, r, drawPaint);
                             break;
                         case "0x724335666650":
                             drawPaint.setColor(Color.RED);
-                            r = (float)mb.getAvgDistance()*100;
-                            canvas.drawCircle(500, 0, r, drawPaint);
+                            r = (float)mb.getAvgDistance()*200;
+                            canvas.drawCircle(980, 150, r, drawPaint);
                             break;
                     }
 
                 }
 
-
-
-
-
-
+                drawPaint.setColor(Color.BLACK);
+                float x = (float)centroid[0]*200+30, y=(float)centroid[1]*200+150;
+                canvas.drawCircle(x,y, 5, drawPaint);
             }
 
         }

@@ -37,7 +37,7 @@ class Kalman
         return value;
     }
 
-    public void update(double reading)
+    public double update(double reading)
     {
         //Prediction Update
         estimationErrorCovar = estimationErrorCovar + processNoiseCovar;
@@ -46,6 +46,6 @@ class Kalman
         gain = estimationErrorCovar / (estimationErrorCovar + measureNoiseCovar);
         value = value + (gain * (reading - value));
         estimationErrorCovar = (1 - gain)*estimationErrorCovar;
-
+        return value;
     }
 }
