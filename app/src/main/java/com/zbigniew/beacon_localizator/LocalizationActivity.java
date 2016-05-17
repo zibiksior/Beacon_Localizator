@@ -327,18 +327,18 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
                 else{
                     index = beacony.indexOf(myBeacon);
                     myBeacon = beacony.get(index);
+                    myBeacon.setRssi(beacon.getRssi());
                     kalmanUpdate(index, myBeacon);
                     //myBeacon.addToLastTenRSSi(beacon.getRssi());
 
                     myBeacon.setAvgDistance(beaconDistanceFromModel(myBeacon));
                 }
-
             }
         }
 
 
 
-        if(beacony.size()>0){
+        if(beacony.size()>1){
             positions = new double[beacony.size()][2];
             distances = new double[beacony.size()];
 
@@ -367,15 +367,6 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
             }
         });
 
-        /*if(beacony.size()==4){
-            for (int i=0;i<liczbaKombinacji;i++) {
-                if (calculateTwoCirclesIntersectionPoints(beacony.get(result[i][0]),beacony.get(result[i][1]),beacony.get(result[i][2]),i)) {
-                    calculateThreeCircleIntersection(beacony.get(result[i][2]),i);
-                }
-            }
-        }
-*/
-
     }
 
     private double beaconDistanceFromModel(MyBeacon beacon){
@@ -397,10 +388,11 @@ public class LocalizationActivity extends AppCompatActivity implements BeaconCon
     private void initializeBeaconManager() {
         mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
         // Detect the main Eddystone-UID frame:
-        //mBeaconManager.getBeaconParsers().add(new BeaconParser()
-        //      .setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
         mBeaconManager.getBeaconParsers().add(new BeaconParser().
                 setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"));
+        // Detect the main iBeacon frame:
+        //mBeaconManager.getBeaconParsers().add(new BeaconParser()
+        //      .setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
         mBeaconManager.bind(this);
     }
 
